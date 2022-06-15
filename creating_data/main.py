@@ -32,5 +32,5 @@ if __name__ == '__main__':
         else:
             i.append(0)
     t.pr()
-    new_text = 'hi'
+    new_text = 'Новый текст'
 
