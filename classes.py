@@ -1,9 +1,12 @@
 import pickle
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from functools import total_ordering
 from random import choice, randrange
+from typing import TypeAlias
+import logging
+from logger import HANDLER
 
-Tid = int
+Tid: TypeAlias = int
 
 
 @total_ordering
@@ -100,7 +103,12 @@ class TokenMeta:
 
 
 class Tokenizer(TokenMeta):
+    def __add_logger(self):
+        self.logger = logging.Logger(name='Tokenizer', level=logging.WARNING)
+        self.logger.addHandler(HANDLER)
+
     def __init__(self):
+        self.__add_logger()
         self.cur_tid: Tid = 0
         super().__init__()
 
@@ -167,7 +175,7 @@ class Tokenizer(TokenMeta):
 
     def pack_file(self, file):
         data = {
-            'meta': asdict(self._meta),
+            'meta': self._meta,
             'tokens': self.token_cache,
             'bigrams': self.bigrams,
             'trigrams': self.trigrams}
@@ -299,7 +307,6 @@ if __name__ == "__main__":
     T = Tokenizer()
     T.parse_text_from_file('corpus.txt')
     # T.unpack_file('corpus.dat')
-    print(T.trigrams)
     # print(T.string_to_tokens('I am cold'))
     T.pack_file('corpus.dat')
     print(T.token_sum())
