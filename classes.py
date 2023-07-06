@@ -50,6 +50,9 @@ class MetaInfo:
 
 
 class TokenMeta:
+    logger = logging.Logger(name="TokenMeta", level=logging.WARNING)
+    logger.addHandler(HANDLER)
+
     def __init__(self):
         self._meta = MetaInfo(
             token_amount=0,
@@ -60,14 +63,44 @@ class TokenMeta:
         self.trigrams: TokenField = {}
         self.token_cache: TokenCache = {}
 
-    def unpack_file(self, file):
+    def unpack_file(self, file: str) -> None:
         """open {file}.dat and load all tokens, bigrams and trigrams"""
-        with open(file, 'rb') as file:
-            data = pickle.load(file)
-            self._meta = data['meta']
-            self.token_cache = data['tokens']
-            self.bigrams = data['bigrams']
-            self.trigrams = data['trigrams']
+        try:
+            with open(file, 'rb') as file:
+                data = pickle.load(file)
+                self._check_the_fields(data, file.name)
+                self._meta = data['meta']
+                self.token_cache = data['tokens']
+                self.bigrams = data['bigrams']
+                self.trigrams = data['trigrams']
+        except (KeyError, pickle.UnpicklingError, AttributeError) as ex:
+            self.logger.error(
+                f'{ex.__class__.__name__}: {ex}\nThe file is corrupted or has an incorrect format,'
+                f' please retokenise it, using corpus.txt')
+            raise
+        except EOFError as ex:
+            self.logger.error(
+                f'{ex.__class__.__name__}: {ex}\nThe file is empty, please retokenise it, using corpus.txt')
+            raise
+        except FileNotFoundError as ex:
+            self.logger.error(
+                f'{ex.__class__.__name__}: {ex}\nThere is no file {file} in directory')
+            raise
+        except Exception as ex:
+            self.logger.error(
+                f'{ex.__class__.__name__}: {ex}\nUNKNOWN EXCEPTION')
+            raise
+
+    def _check_the_fields(self, fields: dict, filename: str) -> None:
+        if not all(fields.values()):
+            self.logger.warning(f'not all of the data was received from file {filename}')
+        for i, j in fields.items():
+            if not j:
+                self.logger.warning(f'field {i} is empty')
+
+    @staticmethod
+    def _check_the_field(field: dict) -> tuple[str, bool]:
+        return field.__name__, bool(field)
 
     def string_to_tokens(self, text: str) -> list[Tid]:
         """convert string into list of tokens"""
@@ -83,7 +116,7 @@ class TokenMeta:
         return tokens
 
     @staticmethod
-    def _sort_dict(data: dict):
+    def _sort_dict(data: dict) -> dict:
         def sort_func(x: tuple[Tid:Token]):
             return x[1]
 
@@ -94,20 +127,18 @@ class TokenMeta:
     def _max_dict(data: dict) -> tuple:
         return max(data.items(), key=lambda x: x[1].quantity)
 
-    def word_by_tid(self, tid: Tid):
+    def word_by_tid(self, tid: Tid) -> str:
         return self.bigrams[tid].value
 
-    def tid_by_word(self, word: str):
+    def tid_by_word(self, word: str) -> Tid:
         return self.token_cache[word]
 
 
 class Tokenizer(TokenMeta):
-    def __add_logger(self):
-        self.logger = logging.Logger(name='Tokenizer', level=logging.WARNING)
-        self.logger.addHandler(HANDLER)
+    logger = logging.Logger(name='Tokenizer', level=logging.WARNING)
+    logger.addHandler(HANDLER)
 
     def __init__(self):
-        self.__add_logger()
         self.cur_tid: Tid = 0
         super().__init__()
 
@@ -211,7 +242,6 @@ class Randomizer(TokenMeta):
         self.unpack_file(data_path)
         self.start_tokens: list[Tid] = []
         self.end_tokens: list[Tid] = []
-        self.stend_tokens: list[Tid] = []
         self._fill_data()
         self.__sentence = ''
         self.__last_word = None
@@ -220,13 +250,11 @@ class Randomizer(TokenMeta):
         self.state = None
 
     def _fill_data(self):
-        endsign = ['.', '!', '?', '…', '\n']
+        end_sign = ['.', '!', '?', '…', '\n']
         for token, bigram in self.bigrams.items():
-            if bigram.value.istitle() and bigram.value[-1] in endsign:
-                self.stend_tokens.append(token)
             if bigram.value.istitle():
                 self.start_tokens.append(token)
-            if bigram.value[-1] in endsign:
+            if bigram.value[-1] in end_sign:
                 self.end_tokens.append(token)
 
     def generate_sentence(self, min_len=5):
@@ -259,15 +287,15 @@ class Randomizer(TokenMeta):
                 tail_2 = self.trigrams[(tid, bid)].tail.copy()
                 tail = self.__merge_tails(tail, tail_2)
             if self.__temp_len < min_len:
-                topop = []
+                to_pop = []
                 for i in tail.keys():
                     if i in self.end_tokens:
-                        topop.append(i)
-                for i in topop[::-1]:
+                        to_pop.append(i)
+                for i in to_pop[::-1]:
                     last = i
                     tail.pop(i)
             if tail:
-                word = self.__choise(tail)
+                word = self.__choice(tail)
             else:
                 word = last
         word = word
@@ -277,7 +305,7 @@ class Randomizer(TokenMeta):
         return word
 
     @staticmethod
-    def __choise(tail) -> Tid:
+    def __choice(tail) -> Tid:
         tid = 0
         count = 0
         tail_ranges = []
@@ -304,8 +332,8 @@ class Randomizer(TokenMeta):
 
 if __name__ == "__main__":
     T = Tokenizer()
-    T.parse_text_from_file('corpus.txt')
-    # T.unpack_file('corpus.dat')
+    # T.parse_text_from_file('corpus.txt')
+    T.unpack_file('corpus.dat')
     # print(T.string_to_tokens('I am cold'))
-    T.pack_file('corpus.dat')
-    print(T.token_sum())
+    # T.pack_file('corpus.dat')
+    # print(T.token_sum())
