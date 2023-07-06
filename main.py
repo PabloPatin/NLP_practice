@@ -1,5 +1,8 @@
-import pickle
+from classes import Tokenizer, Randomizer
+
 
 if __name__ == '__main__':
-    with open('corpus.dat', 'wb') as file:
-        pickle.dump({'meta': {1:2, 2:3}}, file)
+    T = Tokenizer()
+    T.unpack_file('corpus.dat')
+    R = Randomizer('corpus.dat')
+    print(R.generate_sentence(min_len=80))
