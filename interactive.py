@@ -1,4 +1,4 @@
-from classes import Tokenizer
+from classes import *
 import os
 
 
@@ -10,10 +10,10 @@ class Datafile:
     def __init__(self, path):
         if os.path.exists(path):
             self.format = path.split('.')[-1]
-            if self.format in ['json', 'txt']:
+            if self.format in ['dat', 'txt']:
                 self.path = path
             else:
-                raise FileFormatError('Не верный формат файла, ожидается .txt или .json')
+                raise FileFormatError('Не верный формат файла, ожидается .txt или .dat')
         else:
             raise FileNotFoundError('Не верный путь файла')
 
@@ -49,7 +49,7 @@ class Interface:
         print(f'Всего токенов: {self.tk.word_sum()}')
         print(f'Уникальных токенов: {self.tk.token_sum()}')
         print(f'Всего биграмм: {self.tk.bigram_sum()}')
-        print(f'Уникальных биграмм: {self.tk.unique_bigram_sum()}')
+        print(f'Уникальных биграмм: {self.tk.trigram_sum()}')
 
     def __init__(self):
         self.tk = Tokenizer()
@@ -57,8 +57,8 @@ class Interface:
         while not datafile:
             path = self.__input('Введите путь к файлу с корпусом')
             datafile = self.__datafile_validate(path)
-        if datafile.format == 'json':
-            self.tk.from_json(datafile.path)
+        if datafile.format == 'dat':
+            self.tk.unpack_file(datafile.path)
         elif datafile.format == 'txt':
             self.tk.parse_text_from_file(datafile.path)
         self.print_statistic()
@@ -77,13 +77,12 @@ class TokenInterface(Interface):
         print(f'Уникальных токенов: {self.tk.token_sum()}')
 
     def execute_command(self, inp):
-        token_list = self.tk.tokens_key_to_list()
         try:
             if inp.isnumeric():
                 inp = int(inp)
-                print(token_list[inp])
+                print(self.tk.bigrams[inp].value)
             else:
-                print(self.tk.tokens[inp])
+                print(self.tk.token_cache[inp])
         except ValueError:
             print('ValueError. Введите числовое значение')
         except IndexError:
@@ -95,25 +94,38 @@ class TokenInterface(Interface):
 class BigramInterface(Interface):
     def print_statistic(self):
         print('Статистика корпуса текста')
-        print(f'Всего биграмм: {self.tk.bigram_sum()}')
-        print(f'Уникальных биграмм: {self.tk.unique_bigram_sum()}')
+        print(f'Всего биграмм: {self.tk.word_sum() - 1}')
+        print(f'Уникальных биграмм: {self.tk.bigram_sum()}')
 
     def execute_command(self, inp):
-        bigram_list = self.tk.bigrams_key_to_list()
+        inp = tuple(inp.split())
         try:
-            if inp.isnumeric():
-                inp = int(inp)
-                print(f'Голова: {bigram_list[inp][0]}\tХвост: {bigram_list[inp][1]}')
+            if len(inp) == 2:
+                token1, token2 = inp
+                if token1.isnumeric() and token2.isnumeric():
+                    token1, token2 = self.tk.word_by_tid(int(token1)), self.tk.word_by_tid(int(token2))
+                else:
+                    token1, token2 = self.tk.token_cache[token1], self.tk.token_cache[token2]
+                print(token1, token2)
+            elif len(inp) == 1:
+                tid = self.tk.token_cache[inp[0]]
+                bigram = self.tk.bigrams[tid]
+                print(f'Head: {bigram.value}')
+                for tail, count in bigram.tail.items():
+                    print(f'Tail: {self.tk.word_by_tid(int(tail))}\tCount: {count}')
             else:
-                print(self.tk.bigrams[tuple(inp.split())])
+                print('Неверное число аргументов: введите 1 или 2 аргумента')
         except ValueError:
-            print('ValueError. Введите числовое значение')
+            print('ValueError. Введите два слова через запятую')
         except IndexError:
-            print('IndexError. Ввведите число из диапазона токенов')
+            print('IndexError. Ввведите числа из диапазона токенов')
         except KeyError:
-            print('KeyError. Введена несуществующая биграмма')
+            print('Такой биграммы не существует')
 
 
 if __name__ == '__main__':
-    T = Tokenizer()
-    BigramInterface()
+    # T = Tokenizer()
+    # BigramInterface()
+    R = Randomizer('corpus.dat')
+    for i in range(1000):
+        print(R.generate_sentence())
