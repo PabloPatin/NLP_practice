@@ -61,6 +61,7 @@ class TokenMeta:
         self.token_cache: TokenCache = {}
 
     def unpack_file(self, file):
+        """open {file}.dat and load all tokens, bigrams and trigrams"""
         with open(file, 'rb') as file:
             data = pickle.load(file)
             self._meta = data['meta']
@@ -68,22 +69,17 @@ class TokenMeta:
             self.bigrams = data['bigrams']
             self.trigrams = data['trigrams']
 
-    def string_to_tokens(self, text) -> list[Tid]:
+    def string_to_tokens(self, text: str) -> list[Tid]:
+        """convert string into list of tokens"""
         tokens = []
         boof = ''
-        for i in text:
+        for i in text + ' ':
             if i in [' ', '\n', '\t']:
-                if boof in self.token_cache:
-                    tokens.append(self.token_cache[boof])
-                else:
-                    tokens.append(None)
+                token = self.tid_by_word(boof) if boof in self.token_cache else None
+                tokens.append(token)
                 boof = ''
             else:
                 boof += i
-        if boof in self.token_cache:
-            tokens.append(self.token_cache[boof])
-        else:
-            tokens.append(None)
         return tokens
 
     @staticmethod
@@ -100,6 +96,9 @@ class TokenMeta:
 
     def word_by_tid(self, tid: Tid):
         return self.bigrams[tid].value
+
+    def tid_by_word(self, word: str):
+        return self.token_cache[word]
 
 
 class Tokenizer(TokenMeta):
