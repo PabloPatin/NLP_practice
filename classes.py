@@ -3,7 +3,6 @@ from dataclasses import dataclass, asdict
 from functools import total_ordering
 from random import choice, randrange
 
-
 Tid = int
 
 
@@ -211,9 +210,10 @@ class Randomizer(TokenMeta):
         self.__last_word = None
         self.__pre_last_word = None
         self.__temp_len = 0
+        self.state = None
 
     def _fill_data(self):
-        endsign = ['.', '!', '?', '…']
+        endsign = ['.', '!', '?', '…', '\n']
         for token, bigram in self.bigrams.items():
             if bigram.value.istitle() and bigram.value[-1] in endsign:
                 self.stend_tokens.append(token)
@@ -229,6 +229,8 @@ class Randomizer(TokenMeta):
         while new_word not in self.end_tokens:
             new_word = self.find_next_word(min_len=min_len)
             self.__sentence += self.word_by_tid(new_word) + ' '
+        self.__last_word = None
+        self.__pre_last_word = None
         return self.__sentence
 
     def find_next_word(self, last_word='', pre_last_word='', min_len=5):

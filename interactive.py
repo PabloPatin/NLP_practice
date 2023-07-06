@@ -127,5 +127,5 @@ if __name__ == '__main__':
     # T = Tokenizer()
     # BigramInterface()
     R = Randomizer('corpus.dat')
-    for i in range(1000):
+    for i in range(10):
         print(R.generate_sentence())
