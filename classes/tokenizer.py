@@ -1,20 +1,22 @@
 import pickle
 import logging
+from os.path import exists
 
+from settings import LOG_LEVEL, DATA_PATH
 from .logger import Handler
 from .meta import TokenMeta
 from .tokens import Tid, Bigram, Trigram
 
 
 class Tokenizer(TokenMeta):
-    logger = logging.Logger(name='Tokenizer', level=logging.WARNING)
+    logger = logging.Logger(name='Tokenizer', level=LOG_LEVEL)
     logger.addHandler(Handler)
 
     def __init__(self):
         self.cur_tid: Tid = 0
         super().__init__()
 
-    def parse_text(self, text: str):
+    def parse_text(self, text: str) -> None:
         word1, word2, word3 = '', '', ''
         for i in text + ' ':
             if i not in [' ', '\n', '\t']:
@@ -27,14 +29,14 @@ class Tokenizer(TokenMeta):
                     self.add_trigram(word3, word2, word1)
                 word3, word2, word1 = word2, word1, ''
 
-    def add_token(self, token: str):
+    def add_token(self, token: str) -> None:
         self._meta.word_quantity += 1
         if token not in self.token_cache:
             self._meta.token_amount += 1
             self.token_cache[token] = self.cur_tid
             self.cur_tid += 1
 
-    def add_bigram(self, token1: str, token2: str):
+    def add_bigram(self, token1: str, token2: str) -> None:
         token1_id = self.token_cache[token1]
         token2_id = self.token_cache[token2]
         if token1_id in self.bigrams:
@@ -50,7 +52,7 @@ class Tokenizer(TokenMeta):
             bigram = Bigram(token1_id, 1, token1, {token2_id: 1})
             self.bigrams[token1_id] = bigram
 
-    def add_trigram(self, token1: str, token2: str, token3: str):
+    def add_trigram(self, token1: str, token2: str, token3: str) -> None:
         token1_id = self.token_cache[token1]
         token2_id = self.token_cache[token2]
         token3_id = self.token_cache[token3]
@@ -68,16 +70,34 @@ class Tokenizer(TokenMeta):
             self.trigrams[head] = Trigram(head, 1, f'{token1} {token2}', {token3_id: 1})
 
     def parse_text_from_file(self, file: str):
-        with open(file, 'r', encoding='utf-8') as file:
-            text = file.read()
+        file_path = DATA_PATH + file
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text = file.read()
+            if not text.split():
+                raise EOFError('file is empty')
             self.parse_text(text)
+        except EOFError as ex:
+            self._log_error(ex, 'The file is empty, please change the corpus.txt file')
+        except FileNotFoundError as ex:
+            self._log_error(ex, f'There is no file {file.name} in directory {DATA_PATH}')
+        except Exception as ex:
+            self._log_error(ex, 'UNKNOWN EXCEPTION')
+        else:
+            self.logger.info(f'{file.name} successfully parsed')
 
     def pack_file(self, file):
+        file_path = DATA_PATH + file
         data = {
             'meta': self._meta,
             'tokens': self.token_cache,
             'bigrams': self.bigrams,
             'trigrams': self.trigrams}
+        if not any((self.token_cache, self.bigrams, self.trigrams)):
+            self._log_error(ValueError('all of data is empy'),
+                            'try to parse or load it from other file first')
+        if exists(file_path):
+            self.logger.warning(f'file {file} was overwritten')
         with open(file, 'wb') as file:
             pickle.dump(data, file)
 

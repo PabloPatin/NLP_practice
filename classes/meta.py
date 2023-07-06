@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TypeAlias
 import logging
 
-from settings import DATA_PATH
+from settings import DATA_PATH, LOG_LEVEL
 from .tokens import Tid, Token, Bigram, Trigram
 from .logger import Handler
 
@@ -22,7 +22,7 @@ class MetaInfo:
 
 
 class TokenMeta:
-    logger = logging.Logger(name="TokenMeta", level=logging.WARNING)
+    logger = logging.Logger(name="TokenMeta", level=LOG_LEVEL)
     logger.addHandler(Handler)
 
     def __init__(self):
@@ -35,11 +35,15 @@ class TokenMeta:
         self.trigrams: TrigramField = {}
         self.token_cache: TokenCache = {}
 
+    def _log_error(self, ex,  message):
+        self.logger.error(f'{ex.__class__.__name__}: {ex}\n{message}')
+        raise ex
+
     def unpack_file(self, file: str) -> None:
         """open {file}.dat and load all tokens, bigrams and trigrams"""
-        file = DATA_PATH + file
+        file_path = DATA_PATH + file
         try:
-            with open(file, 'rb') as file:
+            with open(file_path, 'rb') as file:
                 data = pickle.load(file)
                 self._check_the_fields(data, file.name)
                 self._meta = data['meta']
@@ -47,22 +51,16 @@ class TokenMeta:
                 self.bigrams = data['bigrams']
                 self.trigrams = data['trigrams']
         except (KeyError, pickle.UnpicklingError, AttributeError) as ex:
-            self.logger.error(
-                f'{ex.__class__.__name__}: {ex}\nThe file is corrupted or has an incorrect format,'
-                f' please retokenise it, using corpus.txt')
-            raise
+            self._log_error(ex, 'The file is corrupted or has an incorrect format, '
+                                'please retokenise it, using corpus.txt')
         except EOFError as ex:
-            self.logger.error(
-                f'{ex.__class__.__name__}: {ex}\nThe file is empty, please retokenise it, using corpus.txt')
-            raise
+            self._log_error(ex, 'The file is empty, please retokenise it, using corpus.txt')
         except FileNotFoundError as ex:
-            self.logger.error(
-                f'{ex.__class__.__name__}: {ex}\nThere is no file {file} in directory')
-            raise
+            self._log_error(ex, f'There is no file {file.name} in directory {DATA_PATH}')
         except Exception as ex:
-            self.logger.error(
-                f'{ex.__class__.__name__}: {ex}\nUNKNOWN EXCEPTION')
-            raise
+            self._log_error(ex, 'UNKNOWN EXCEPTION')
+        else:
+            self.logger.info('data loaded successfully')
 
     def _check_the_fields(self, fields: dict, filename: str) -> None:
         if not all(fields.values()):
