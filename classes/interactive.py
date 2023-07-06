@@ -126,6 +126,6 @@ class BigramInterface(Interface):
 if __name__ == '__main__':
     # T = Tokenizer()
     # BigramInterface()
-    R = Randomizer('corpus.dat')
+    R = Randomizer('../data/corpus.dat')
     for i in range(3):
         print(R.generate_sentence())
