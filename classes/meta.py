@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TypeAlias
 import logging
 
-from settings import DATA_PATH, LOG_LEVEL
+from settings import DATA_PATH, LOG_LEVEL, DATA_FILE
 from .tokens import Tid, Token, Bigram, Trigram
 from .logger import Handler
 
@@ -35,11 +35,11 @@ class TokenMeta:
         self.trigrams: TrigramField = {}
         self.token_cache: TokenCache = {}
 
-    def _log_error(self, ex,  message):
+    def _log_error(self, ex, message):
         self.logger.error(f'{ex.__class__.__name__}: {ex}\n{message}')
         raise ex
 
-    def unpack_file(self, file: str) -> None:
+    def unpack_file(self, file: str = DATA_FILE) -> None:
         """open {file}.dat and load all tokens, bigrams and trigrams"""
         file_path = DATA_PATH + file
         try:
@@ -103,7 +103,3 @@ class TokenMeta:
 
     def tid_by_word(self, word: str) -> Tid:
         return self.token_cache[word]
-
-
-if __name__ == "__main__":
-    T = TokenMeta()

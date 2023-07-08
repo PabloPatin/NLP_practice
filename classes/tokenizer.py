@@ -2,10 +2,10 @@ import pickle
 import logging
 from os.path import exists
 
-from settings import LOG_LEVEL, DATA_PATH
-from .logger import Handler
-from .meta import TokenMeta
-from .tokens import Tid, Bigram, Trigram
+from settings import LOG_LEVEL, DATA_PATH, DATA_FILE, CORPUS_FILE
+from classes.logger import Handler
+from classes.meta import TokenMeta
+from classes.tokens import Tid, Bigram, Trigram
 
 
 class Tokenizer(TokenMeta):
@@ -17,6 +17,7 @@ class Tokenizer(TokenMeta):
         super().__init__()
 
     def parse_text(self, text: str) -> None:
+        """extract tokens, bigrams and trigrams from text"""
         word1, word2, word3 = '', '', ''
         for i in text + ' ':
             if i not in [' ', '\n', '\t']:
@@ -69,24 +70,27 @@ class Tokenizer(TokenMeta):
             self._meta.trigram_amount += 1
             self.trigrams[head] = Trigram(head, 1, f'{token1} {token2}', {token3_id: 1})
 
-    def parse_text_from_file(self, file: str):
+    def parse_text_from_file(self, file: str = CORPUS_FILE) -> None:
+        """extract tokens, bigrams and trigrams from file"""
         file_path = DATA_PATH + file
         try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                text = file.read()
+            with open(file_path, 'r', encoding='utf-8') as o_file:
+                text = o_file.read()
             if not text.split():
                 raise EOFError('file is empty')
             self.parse_text(text)
         except EOFError as ex:
-            self._log_error(ex, 'The file is empty, please change the corpus.txt file')
+            self._log_error(ex, f'The file is empty, please change the'
+                                f' CORPUS_FILE file in settings, or choose another file')
         except FileNotFoundError as ex:
-            self._log_error(ex, f'There is no file {file.name} in directory {DATA_PATH}')
+            self._log_error(ex, f'There is no file {file} in directory {DATA_PATH}')
         except Exception as ex:
             self._log_error(ex, 'UNKNOWN EXCEPTION')
         else:
-            self.logger.info(f'{file.name} successfully parsed')
+            self.logger.info(f'{file} successfully parsed')
 
-    def pack_file(self, file):
+    def pack_file(self, file: str = DATA_FILE):
+        """save Tokenizer state in file"""
         file_path = DATA_PATH + file
         data = {
             'meta': self._meta,
@@ -98,34 +102,40 @@ class Tokenizer(TokenMeta):
                             'try to parse or load it from other file first')
         if exists(file_path):
             self.logger.warning(f'file {file} was overwritten')
-        with open(file, 'wb') as file:
+        with open(file_path, 'wb') as file:
             pickle.dump(data, file)
 
-    def add_to_file(self, text, file):
+    def add_text_to_file(self, text, file: str = DATA_FILE):
+        """Add plain text to file"""
         self.unpack_file(file)
         self.parse_text(text)
         self.pack_file(file)
 
-    def word_sum(self):
+    def word_sum(self) -> int:
+        """return summ of all loaded words"""
         return self._meta.word_quantity
 
     def token_sum(self):
+        """return summ of all loaded tokens"""
         return self._meta.token_amount
 
     def bigram_sum(self):
+        """return summ of all loaded bigrams"""
         return self._meta.bigram_amount
 
     def trigram_sum(self):
+        """return summ of all loaded trigrams"""
         return self._meta.trigram_amount
 
-    def tokens_to_list(self):
+    def tokens_to_list(self) -> list[str]:
         return [i.value for i in self.bigrams.values()]
 
-    def bigrams_to_list(self):
+    def bigrams_to_list(self) -> list[str]:
         return [i.value for i in self.trigrams.values()]
 
 
 if __name__ == '__main__':
     T = Tokenizer()
-    T.parse_text_from_file('../data/corpus.txt')
-    T.pack_file('../data/corpus.dat')
+    T.logger.removeHandler(Handler)
+    T.parse_text_from_file()
+    T.pack_file()
