@@ -15,6 +15,6 @@ FILE_FORMATS = DATA_FILE_FORMATS + CORPUS_FILE_FORMATS
 
 LOG_PATH = ABS_PATH + '\\logs\\'
 LOG_FILE = 'logger.log'
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.WARNING
 
 TOKEN_DELIMITERS = [' ', '\t', '\n']

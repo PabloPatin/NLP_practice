@@ -136,6 +136,5 @@ class Tokenizer(TokenMeta):
 
 if __name__ == '__main__':
     T = Tokenizer()
-    T.logger.removeHandler(Handler)
     T.parse_text_from_file()
     T.pack_file()
