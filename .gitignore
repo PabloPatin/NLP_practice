@@ -1,4 +1,6 @@
 venv
-.idea
 logs/*
+.idea
 path.py
+__pycache__
+classes/__pycache__
