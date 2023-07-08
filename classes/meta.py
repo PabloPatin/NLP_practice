@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TypeAlias
 import logging
 
-from settings import DATA_PATH, LOG_LEVEL, DATA_FILE
+from settings import DATA_PATH, LOG_LEVEL, DATA_FILE, TOKEN_DELIMITERS
 from .tokens import Tid, Token, Bigram, Trigram
 from .logger import Handler
 
@@ -69,16 +69,16 @@ class TokenMeta:
             if not j:
                 self.logger.warning(f'field {i} is empty')
 
-    @staticmethod
-    def _check_the_field(field: dict) -> tuple[str, bool]:
-        return field.__name__, bool(field)
+    # @staticmethod
+    # def _check_the_field(field: dict) -> tuple[str, bool]:
+    #     return field.__name__, bool(field)
 
     def string_to_tokens(self, text: str) -> list[Tid]:
         """convert string into list of tokens"""
         tokens = []
         boof = ''
         for i in text + ' ':
-            if i in [' ', '\n', '\t']:
+            if i in TOKEN_DELIMITERS:
                 token = self.tid_by_word(boof) if boof in self.token_cache else None
                 tokens.append(token)
                 boof = ''

@@ -1,8 +1,7 @@
-import pickle
 import logging
 from random import choice, randrange
 
-from settings import LOG_LEVEL, DATA_PATH, DATA_FILE
+from settings import LOG_LEVEL, DATA_FILE
 from classes.logger import Handler
 from classes.meta import TokenMeta
 from classes.tokens import Tid
@@ -36,12 +35,12 @@ class Randomizer(TokenMeta):
     def generate_sentence(self, min_len=5):
         sentence, new_word = '', ''
         while new_word not in self.end_tokens:
-            new_word = self.find_next_word(min_len=min_len)
-            self.__sentence += self.word_by_tid(new_word) + ' '
-        self._return_generator_state()
+            new_word = self._find_next_word(min_len=min_len)
+            sentence += self.word_by_tid(new_word) + ' '
+        self.reset_generator()
         return sentence
 
-    def _return_generator_state(self):
+    def reset_generator(self):
         self.__last_word = ''
         self.__pre_last_word = ''
         self.__temp_len = 0
@@ -55,11 +54,14 @@ class Randomizer(TokenMeta):
         for i in to_pop[::-1]:
             last = i
             tail.pop(i)
-        if not last:
-            last = choice(self.start_tokens)
-        return tail if tail else {last: 1}
+        if not tail:
+            if not last:
+                self.logger.debug('no one word matched')
+                last = choice(self.start_tokens)
+            tail = {last: 1}
+        return tail
 
-    def find_next_word(self, min_len=5):
+    def _find_next_word(self, min_len=5):
         word = None
         last_word = self.__last_word
         pre_last_word = self.__pre_last_word
@@ -71,16 +73,23 @@ class Randomizer(TokenMeta):
             bid = last_word
             tail = self.bigrams[bid].tail.copy()
             if pre_last_word:
-                tid = pre_last_word
-                tail_2 = self.trigrams[(tid, bid)].tail.copy()
+                trid = pre_last_word
+                tail_2 = self.trigrams[(trid, bid)].tail.copy()
                 tail = self.__merge_tails(tail, tail_2)
             if self.__temp_len < min_len:
                 tail = self.__pop_end_tokens_from_tail(tail)
-                word = self.__choice(tail)
+            word = self.__choice(tail)
+        self.__update_temp(word)
+        return word
+
+    def __update_temp(self, word):
         self.__pre_last_word = self.__last_word
         self.__last_word = word
         self.__temp_len += 1
-        return word
+
+    def find_next_word(self):
+        """find next word for sentence"""
+        return self.word_by_tid(self._find_next_word())
 
     @staticmethod
     def __choice(tail: dict[Tid, int]) -> Tid:
@@ -111,4 +120,7 @@ class Randomizer(TokenMeta):
 if __name__ == "__main__":
     R = Randomizer()
     R.unpack_file()
-    print(R.generate_sentence())
+    for _ in range(15):
+        print(R.find_next_word(), end=' ')
+    print('\n'+R.generate_sentence())
+

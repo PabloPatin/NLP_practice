@@ -2,7 +2,7 @@ import pickle
 import logging
 from os.path import exists
 
-from settings import LOG_LEVEL, DATA_PATH, DATA_FILE, CORPUS_FILE
+from settings import LOG_LEVEL, DATA_PATH, DATA_FILE, CORPUS_FILE, TOKEN_DELIMITERS
 from classes.logger import Handler
 from classes.meta import TokenMeta
 from classes.tokens import Tid, Bigram, Trigram
@@ -20,7 +20,7 @@ class Tokenizer(TokenMeta):
         """extract tokens, bigrams and trigrams from text"""
         word1, word2, word3 = '', '', ''
         for i in text + ' ':
-            if i not in [' ', '\n', '\t']:
+            if i not in TOKEN_DELIMITERS:
                 word1 += i
             else:
                 self.add_token(word1)
