@@ -2,6 +2,4 @@ venv
 .idea
 path.py
 logs/*
-!logs/.gitignore
-__pycache__
-classes/__pycache__
+!logs/.gitkeep
