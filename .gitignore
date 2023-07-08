@@ -1,5 +1,4 @@
 venv
 .idea
-README.md
-logs
+logs/*
 path.py
