@@ -1,5 +1,4 @@
 venv
-logs/*
 .idea
 path.py
 __pycache__
