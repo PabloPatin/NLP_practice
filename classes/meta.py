@@ -1,11 +1,11 @@
+import logging
 import pickle
 from dataclasses import dataclass
 from typing import TypeAlias
-import logging
 
+from classes.logger import Handler
+from classes.tokens import Tid, Token, Bigram, Trigram
 from settings import DATA_PATH, LOG_LEVEL, DATA_FILE, TOKEN_DELIMITERS
-from .tokens import Tid, Token, Bigram, Trigram
-from .logger import Handler
 
 TokenField: TypeAlias = dict[Tid:Token]
 BigramField: TypeAlias = dict[Tid:Bigram]
@@ -103,3 +103,19 @@ class TokenMeta:
 
     def tid_by_word(self, word: str) -> Tid:
         return self.token_cache[word]
+
+    def word_sum(self) -> int:
+        """return summ of all loaded words"""
+        return self._meta.word_quantity
+
+    def token_sum(self):
+        """return summ of all loaded tokens"""
+        return self._meta.token_amount
+
+    def bigram_sum(self):
+        """return summ of all loaded bigrams"""
+        return self._meta.bigram_amount
+
+    def trigram_sum(self):
+        """return summ of all loaded trigrams"""
+        return self._meta.trigram_amount

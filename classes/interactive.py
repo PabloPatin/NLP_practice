@@ -1,6 +1,6 @@
-from classes import *
 import os
 
+from classes import *
 from settings import DATA_PATH, FILE_FORMATS, DATA_FILE_FORMATS, CORPUS_FILE_FORMATS, TOKEN_DELIMITERS
 
 

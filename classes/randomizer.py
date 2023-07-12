@@ -1,10 +1,10 @@
 import logging
 from random import choice, randrange
 
-from settings import LOG_LEVEL, DATA_FILE
 from classes.logger import Handler
 from classes.meta import TokenMeta
 from classes.tokens import Tid
+from settings import LOG_LEVEL, DATA_FILE
 
 
 class Randomizer(TokenMeta):

@@ -1,11 +1,11 @@
-import pickle
 import logging
+import pickle
 from os.path import exists
 
-from settings import LOG_LEVEL, DATA_PATH, DATA_FILE, CORPUS_FILE, TOKEN_DELIMITERS
 from classes.logger import Handler
 from classes.meta import TokenMeta
 from classes.tokens import Tid, Bigram, Trigram
+from settings import LOG_LEVEL, DATA_PATH, DATA_FILE, CORPUS_FILE, TOKEN_DELIMITERS
 
 
 class Tokenizer(TokenMeta):
@@ -110,22 +110,6 @@ class Tokenizer(TokenMeta):
         self.unpack_file(file)
         self.parse_text(text)
         self.pack_file(file)
-
-    def word_sum(self) -> int:
-        """return summ of all loaded words"""
-        return self._meta.word_quantity
-
-    def token_sum(self):
-        """return summ of all loaded tokens"""
-        return self._meta.token_amount
-
-    def bigram_sum(self):
-        """return summ of all loaded bigrams"""
-        return self._meta.bigram_amount
-
-    def trigram_sum(self):
-        """return summ of all loaded trigrams"""
-        return self._meta.trigram_amount
 
     def tokens_to_list(self) -> list[str]:
         return [i.value for i in self.bigrams.values()]

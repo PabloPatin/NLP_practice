@@ -1,6 +1,6 @@
+from dataclasses import dataclass
 from functools import total_ordering
 from typing import TypeAlias
-from dataclasses import dataclass
 
 Tid: TypeAlias = int
 
